@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meetup Coffee Shop - Spin & Win!</title>
+    <style>
+        /* --- CSS Styling (FINAL, CONSOLIDATED VERSION) --- */
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f7f7f7;
+            color: #1a1a1a;
+        }
+
+        h1 {
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #e1c254;
+            background-color: #15402b;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 350px; /* Size of the wheel */
+            height: 350px;
+            margin-bottom: 40px;
+        }
+
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            transition: transform 6s cubic-bezier(0.25, 0.1, 0, 1);
+            overflow: hidden;
+            /* Improved conic-gradient for 6 equal slices with distinct colors */
+            background: conic-gradient(
+            #38761d 0deg 60deg,      /* Try Again */
+            #6aa84f 60deg 120deg,    /* 25% Discount */
+            #a9d18e 120deg 180deg,   /* 50% Off Coffee */
+            #d9ead3 180deg 240deg,   /* Free Cookie */
+            #4a904e 240deg 300deg,   /* BOGO Free */
+            #15402b 300deg 360deg    /* 35% Off Bill */
+            );
+        }
+
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 20px solid #cc0000;
+            z-index: 20;
+        }
+
+        .center-logo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 120px;
+            height: 120px;
+            background-color: #fff;
+            border-radius: 50%;
+            border: 2px solid #e1c254;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .center-logo img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 50%;
+        }
+
+      .prize-text {
+    position: absolute;
+    /* Anchor to the center of the wheel container */
+    top: 50%;
+    left: 50%;
+    /* Use transform-origin: center center for predictable rotation */
+    transform-origin: center center;
+    
+    width: 90px;
+    font-size: 13px; /* Slightly smaller for better fit */
+    font-weight: bold;
+    text-align: center;
+    line-height: 1.2;
+    z-index: 20; /* High z-index is good */
+    color: #15402b;
+    background: rgba(225,194,84,0.85); /* Dark Yellow Tag */
+    border-radius: 8px;
+    padding: 4px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2); /* Increased shadow for lift */
+    
+    /* CRITICAL TRANSFORMATION SEQUENCE */
+    transform: 
+        /* 1. Center the tag itself (uses its own width/height) */
+        translate(-50%, -50%) 
+        /* 2. Rotates the tag into its segment's angle (using --i variable) */
+        rotate(calc(var(--i) * 60deg)) 
+        /* 3. Moves the tag 120px radially outward */
+        translate(120px, 0) 
+        /* 4. Rotates the tag to be horizontal inside the slice (90 degrees less than segment angle) */
+        rotate(-90deg); 
+}
+
+
+        @media (max-width: 400px) {
+            .prize-text {
+                width: 60px;
+                font-size: 11px;
+                transform: rotate(calc(var(--i) * 60deg - 30deg)) translate(70px, 0) rotate(90deg);
+            }
+        }
+
+        .spin-button {
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #e1c254;
+            background-color: #15402b;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background-color 0.3s;
+            z-index: 50;
+        }
+
+        .spin-button:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+
+        /* --- Modal Styling --- */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .prize-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: #15402b;
+            margin-bottom: 15px;
+        }
+
+        .modal input[type="text"] {
+            width: 90%;
+            padding: 10px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .modal button {
+            background-color: #154028;
+            color: white;
+            padding: 10px 20px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <h1> Meetup Coffee Shop </h1>
+
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <div class="wheel" id="wheel">
+            <div class="prize-text" style="--i:1;">TRY AGAIN</div>
+            <div class="prize-text" style="--i:2;">25% OFF</div>
+            <div class="prize-text" style="--i:3;">50% OFF COFFEE</div>
+            <div class="prize-text" style="--i:4;">FREE COOKIE</div>
+            <div class="prize-text" style="--i:5;">BOGO FREE</div>
+            <div class="prize-text" style="--i:6;">35% OFF BILL</div>
+        </div>
+
+        <div class="center-logo">
+            <img src="meetup logo 1 new.jpeg" alt="Meetup Coffee Shop Logo">
+        </div>
+    </div>
+
+    <button class="spin-button" id="spinBtn">SPIN TO WIN!</button>
+
+    <div id="prizeModal" class="modal">
+        <div class="modal-content">
+            <h2>🎉 CONGRATULATIONS! 🎉</h2>
+            <div class="prize-display" id="prizeText"></div>
+            <p>Please enter your details to receive your prize code:</p>
+
+            <form id="dataForm">
+                <input type="text" id="userName" placeholder="Your Full Name" required>
+                <input type="text" id="userPhone" placeholder="Your Phone Number" required>
+                <input type="hidden" id="winningPrize">
+                <input type="hidden" id="prizeCode">
+
+                <button type="submit" id="submitBtn">Get My Prize!</button>
+                <div id="statusMessage" style="margin-top: 10px; color: #38761d;"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            
+            const wheel = document.getElementById('wheel');
+            const spinBtn = document.getElementById('spinBtn');
+            const modal = document.getElementById('prizeModal');
+            const prizeText = document.getElementById('prizeText');
+            const dataForm = document.getElementById('dataForm');
+            const winningPrizeInput = document.getElementById('winningPrize');
+            const prizeCodeInput = document.getElementById('prizeCode');
+            const statusMessage = document.getElementById('statusMessage');
+
+            // Prize data with weights (sum of weights MUST be 100)
+            const prizes = [
+                // 1. VISUALLY BOGO FREE (5%)
+                { id: 0, name: "BOGO FREE", weight: 5, angleOffset: 30 }, 
+                
+                // 2. VISUALLY 35% OFF BILL (15%)
+                { id: 1, name: "35% OFF BILL", weight: 15, angleOffset: 90 }, 
+                
+                // 3. VISUALLY TRY AGAIN (65%)
+                { id: 2, name: "Try Again", weight: 65, angleOffset: 150 }, 
+                
+                // 4. VISUALLY 25% OFF (7%)
+                { id: 3, name: "25% OFF", weight: 7, angleOffset: 210 }, 
+                
+                // 5. VISUALLY 50% OFF COFFEE (5%)
+                { id: 4, name: "50% OFF COFFEE", weight: 5, angleOffset: 270 }, 
+                
+                // 6. VISUALLY FREE COOKIE (3%)
+                { id: 5, name: "FREE COOKIE", weight: 3, angleOffset: 330 } 
+            ];
+
+            // The URL of your deployed Google Apps Script (REPLACE THIS PLACEHOLDER!)
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzPkIQ9pxp9FHAIjRIKFe-NB_vJh6DCSQg95WQjlloD9RMPxiiMm4c7MSWPoMbxX94X/exec';
+
+            function getWinningPrize() {
+                let totalWeight = prizes.reduce((sum, prize) => sum + prize.weight, 0);
+                let randomNum = Math.random() * totalWeight;
+
+                let cumulativeWeight = 0;
+                for (const prize of prizes) {
+                    cumulativeWeight += prize.weight;
+                    if (randomNum < cumulativeWeight) {
+                        return prize;
+                    }
+                }
+                return prizes[0]; 
+            }
+
+            function generatePrizeCode() {
+                return 'MC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+            }
+
+            // CRITICAL FIX: The check to ensure the button is found before attaching the listener
+            if (spinBtn) { 
+                spinBtn.addEventListener('click', () => {
+                    spinBtn.disabled = true;
+                    statusMessage.textContent = '';
+                    
+                    // FIX FOR SPIN BUTTON: Reset transform before applying new one
+                    wheel.style.transition = 'none';
+                    wheel.style.transform = 'rotate(0deg)';
+                    void wheel.offsetWidth; // Force a browser repaint
+
+                    const winningPrize = getWinningPrize();
+                    const prizeCode = generatePrizeCode();
+                    
+                    // Calculate final rotation
+                    const minAngle = winningPrize.angleOffset - 25;
+                    const maxAngle = winningPrize.angleOffset + 25;
+                    const finalAngle = Math.floor(Math.random() * (maxAngle - minAngle)) + minAngle;
+
+                    const fullRotations = 5 * 360; 
+                    const rotationValue = fullRotations - finalAngle; 
+                    
+                    wheel.style.transition = 'transform 6s cubic-bezier(0.25, 0.1, 0, 1)';
+                    wheel.style.transform = `rotate(${rotationValue}deg)`;
+                    
+                    // Show the Pop-up after the spin finishes (6.1 seconds)
+                    setTimeout(() => {
+                        // Reset modal to winner defaults
+                        statusMessage.textContent = '';
+                        document.getElementById('submitBtn').style.display = 'block';
+                        document.getElementById('userName').style.display = 'block';
+                        document.getElementById('userPhone').style.display = 'block';
+                        document.querySelector('#prizeModal p').textContent = 'Please enter your details to receive your prize code:';
+                        document.querySelector('#prizeModal h2').textContent = '🎉 CONGRATULATIONS! 🎉';
+
+                        prizeText.textContent = winningPrize.name;
+                        winningPrizeInput.value = winningPrize.name;
+                        prizeCodeInput.value = prizeCode;
+
+                        // If "Try Again", hide form and show message
+                        if (winningPrize.name === "Try Again") {
+                            document.getElementById('submitBtn').style.display = 'none';
+                            document.getElementById('userName').style.display = 'none';
+                            document.getElementById('userPhone').style.display = 'none';
+                            statusMessage.textContent = 'No data collection needed.';
+                            document.querySelector('#prizeModal p').textContent = 'Thanks for playing! Better luck next time.';
+                            document.querySelector('#prizeModal h2').textContent = '😞 SORRY! 😞';
+                        }
+
+                        modal.style.display = "block";
+                    }, 6100);
+                });
+            }
+
+
+            // Handle the Form Submission (Data Collection)
+            dataForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const formData = {
+                    name: document.getElementById('userName').value,
+                    phone: document.getElementById('userPhone').value,
+                    prize: winningPrizeInput.value,
+                    code: prizeCodeInput.value,
+                    date: new Date().toISOString()
+                };
+                
+                statusMessage.textContent = 'Submitting...';
+                document.getElementById('submitBtn').disabled = true;
+
+                try {
+                    await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', 
+                        cache: 'no-cache',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                    
+                    statusMessage.innerHTML = `✅ Success! Your prize code is: <strong>${formData.code}</strong><br>Show this code to the barista!`;
+                    
+                    document.getElementById('userName').disabled = true;
+                    document.getElementById('userPhone').disabled = true;
+
+                } catch (error) {
+                    console.error('Error submitting data:', error);
+                    statusMessage.textContent = '❌ Submission failed. Please try again.';
+                    document.getElementById('submitBtn').disabled = false;
+                }
+            });
+            
+            // Allows user to close the modal by clicking outside
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                    document.getElementById('userName').disabled = false;
+                    document.getElementById('userPhone').disabled = false;
+                    document.getElementById('submitBtn').disabled = false;
+                    dataForm.reset();
+                    spinBtn.disabled = false; 
+                }
+            }
+
+        }); // Closes the DOMContentLoaded listener
+    </script>
+</body>
+</html>

@@ -206,13 +206,13 @@
 
     <div class="wheel-container">
         <div class="pointer"></div>
-        <div class="wheel" id="wheel">
-            <div class="prize-text" style="--i:1;">BOGO FREE</div>
-            <div class="prize-text" style="--i:2;">35% OFF BILL</div>
-            <div class="prize-text" style="--i:3;">TRY AGAIN</div>
-            <div class="prize-text" style="--i:4;">25% OFF</div>
-            <div class="prize-text" style="--i:5;">50% OFF COFFEE</div>
-            <div class="prize-text" style="--i:6;">FREE COOKIE</div>
+         <div class="wheel" id="wheel">
+            <div class="prize-text" style="--i:1;">TRY AGAIN</div>
+            <div class="prize-text" style="--i:2;">25% OFF</div>
+            <div class="prize-text" style="--i:3;">50% OFF COFFEE</div>
+            <div class="prize-text" style="--i:4;">FREE COOKIE</div>
+            <div class="prize-text" style="--i:5;">BOGO FREE</div>
+            <div class="prize-text" style="--i:6;">35% OFF BILL</div>
         </div>
 
         <div class="center-logo">
@@ -258,25 +258,14 @@
             const spinTimeInput = document.getElementById('spinTime'); 
 
             // Prize data with weights (FINAL SYNCHRONIZED ORDER)
-            const prizes = [
-    // 1. VISUALLY BOGO FREE (Increased chance)
-    { id: 0, name: "BOGO FREE", weight: 15, angleOffset: 30 }, 
-    
-    // 2. VISUALLY 35% OFF BILL (Increased chance)
-    { id: 1, name: "35% OFF BILL", weight: 25, angleOffset: 90 }, 
-    
-    // 3. VISUALLY TRY AGAIN (Reduced dramatically to fix misfire)
-    { id: 2, name: "Try Again", weight: 1, angleOffset: 150 }, 
-    
-    // 4. VISUALLY 25% OFF (Increased chance)
-    { id: 3, name: "25% OFF", weight: 17, angleOffset: 210 }, 
-    
-    // 5. VISUALLY 50% OFF COFFEE (Increased chance)
-    { id: 4, name: "50% OFF COFFEE", weight: 15, angleOffset: 270 }, 
-    
-    // 6. VISUALLY FREE COOKIE (Highest reward chance)
-    { id: 5, name: "FREE COOKIE", weight: 27, angleOffset: 330 } 
-];
+             const prizes = [
+                { id: 0, name: "BOGO FREE", weight: 5, angleOffset: 30 }, 
+                { id: 1, name: "35% OFF BILL", weight: 15, angleOffset: 90 }, 
+                { id: 2, name: "Try Again", weight: 65, angleOffset: 150 }, 
+                { id: 3, name: "25% OFF", weight: 7, angleOffset: 210 }, 
+                { id: 4, name: "50% OFF COFFEE", weight: 5, angleOffset: 270 }, 
+                { id: 5, name: "FREE COOKIE", weight: 3, angleOffset: 330 } 
+            ];
             // YOUR ACTIVE GOOGLE APPS SCRIPT URL MUST BE HERE
             const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFt3seMxw9EYqHx0J6s-jJOm96u-e5h6QLCITdFYL7sWaUzOd5MsD57K3aJth5Gd7G/exec'; 
 
@@ -428,6 +417,7 @@
     </script>
 </body>
 </html>
+
 
 
 

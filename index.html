@@ -259,14 +259,24 @@
 
             // Prize data with weights (FINAL SYNCHRONIZED ORDER)
             const prizes = [
-                { id: 0, name: "BOGO FREE", weight: 5, angleOffset: 30 }, 
-                { id: 1, name: "35% OFF BILL", weight: 15, angleOffset: 90 }, 
-                { id: 2, name: "Try Again", weight: 65, angleOffset: 150 }, 
-                { id: 3, name: "25% OFF", weight: 7, angleOffset: 210 }, 
-                { id: 4, name: "50% OFF COFFEE", weight: 5, angleOffset: 270 }, 
-                { id: 5, name: "FREE COOKIE", weight: 3, angleOffset: 330 } 
-            ];
-
+    // 1. VISUALLY BOGO FREE (Increased chance)
+    { id: 0, name: "BOGO FREE", weight: 15, angleOffset: 30 }, 
+    
+    // 2. VISUALLY 35% OFF BILL (Increased chance)
+    { id: 1, name: "35% OFF BILL", weight: 25, angleOffset: 90 }, 
+    
+    // 3. VISUALLY TRY AGAIN (Reduced dramatically to fix misfire)
+    { id: 2, name: "Try Again", weight: 1, angleOffset: 150 }, 
+    
+    // 4. VISUALLY 25% OFF (Increased chance)
+    { id: 3, name: "25% OFF", weight: 17, angleOffset: 210 }, 
+    
+    // 5. VISUALLY 50% OFF COFFEE (Increased chance)
+    { id: 4, name: "50% OFF COFFEE", weight: 15, angleOffset: 270 }, 
+    
+    // 6. VISUALLY FREE COOKIE (Highest reward chance)
+    { id: 5, name: "FREE COOKIE", weight: 27, angleOffset: 330 } 
+];
             // YOUR ACTIVE GOOGLE APPS SCRIPT URL MUST BE HERE
             const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFt3seMxw9EYqHx0J6s-jJOm96u-e5h6QLCITdFYL7sWaUzOd5MsD57K3aJth5Gd7G/exec'; 
 
@@ -418,6 +428,7 @@
     </script>
 </body>
 </html>
+
 
 
 

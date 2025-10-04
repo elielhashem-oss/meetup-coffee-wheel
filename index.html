@@ -1,421 +1,151 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meetup Coffee Shop - Spin & Win!</title>
-    <style>
-        /* --- CSS Styling (FINAL, CONSOLIDATED VERSION) --- */
-        body {
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            background-color: #f7f7f7;
-            color: #1a1a1a;
-        }
+/**
+ * Script for logging spin attempts and submissions (wins) 
+ * with enforcement for spin frequency and weekly wins.
+ */
 
-        h1 {
-            padding: 15px 30px;
-            font-size: 18px;
-            font-weight: bold;
-            color: #e1c254;
-            background-color: #15402b;
-            border: none;
-            border-radius: 5px;
-        }
+const SHEET_NAME = 'Sheet1'; // VERIFIED: Must be 'Sheet1'
+const MAX_SPINS_PER_HOUR = 2; // Maximum spins allowed in 60 minutes
+const WIN_LIMIT_DAYS = 7;    // User can only submit/win once every 7 days
 
-        .wheel-container {
-            position: relative;
-            width: 350px; /* Size of the wheel */
-            height: 350px;
-            margin-bottom: 40px;
-        }
-
-        .wheel {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            position: relative;
-            transition: transform 6s cubic-bezier(0.25, 0.1, 0, 1);
-            overflow: hidden;
-            /* Improved conic-gradient for 6 equal slices with distinct colors */
-            background: conic-gradient(
-            #38761d 0deg 60deg,      /* Try Again */
-            #6aa84f 60deg 120deg,    /* 25% Discount */
-            #a9d18e 120deg 180deg,   /* 50% Off Coffee */
-            #d9ead3 180deg 240deg,   /* Free Cookie */
-            #4a904e 240deg 300deg,   /* BOGO Free */
-            #15402b 300deg 360deg    /* 35% Off Bill */
-            );
-        }
-
-        .pointer {
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 10px solid transparent;
-            border-right: 10px solid transparent;
-            border-top: 20px solid #cc0000;
-            z-index: 20;
-        }
-
-        .center-logo {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 120px;
-            height: 120px;
-            background-color: #fff;
-            border-radius: 50%;
-            border: 2px solid #e1c254;
-            transform: translate(-50%, -50%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-        }
-
-        .center-logo img {
-            max-width: 90%;
-            max-height: 90%;
-            object-fit: contain;
-            border-radius: 50%;
-        }
-
-      .prize-text {
-    position: absolute;
-    /* Anchor to the center of the wheel container */
-    top: 50%;
-    left: 50%;
-    /* Use transform-origin: center center for predictable rotation */
-    transform-origin: center center;
-    
-    width: 90px;
-    font-size: 13px; /* Slightly smaller for better fit */
-    font-weight: bold;
-    text-align: center;
-    line-height: 1.2;
-    z-index: 20; /* High z-index is good */
-    color: #15402b;
-    background: rgba(225,194,84,0.85); /* Dark Yellow Tag */
-    border-radius: 8px;
-    padding: 4px 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2); /* Increased shadow for lift */
-    
-    /* CRITICAL TRANSFORMATION SEQUENCE */
-    transform: 
-        /* 1. Center the tag itself (uses its own width/height) */
-        translate(-50%, -50%) 
-        /* 2. Rotates the tag into its segment's angle (using --i variable) */
-        rotate(calc(var(--i) * 60deg)) 
-        /* 3. Moves the tag 120px radially outward */
-        translate(120px, 0) 
-        /* 4. Rotates the tag to be horizontal inside the slice (90 degrees less than segment angle) */
-        rotate(-90deg); 
+// Helper function for creating consistent JSON responses
+function createJsonResponse(data) {
+    return ContentService.createTextOutput(JSON.stringify(data))
+                         .setMimeType(ContentService.MimeType.JSON);
 }
 
+function doPost(e) {
+    let result = {};
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    // CRITICAL FIX: Correctly referencing the SHEET_NAME variable
+    const sheet = ss.getSheetByName(SHEET_NAME); 
+    
+    if (!e || !e.postData || !e.postData.contents) {
+        return createJsonResponse({ status: 'error', message: 'No data provided' });
+    }
+    
+    try {
+        let data = JSON.parse(e.postData.contents);
+        const userPhone = data.phone;
+        
+        // --- 1. CORE VALIDATION CHECKS ---
+        const lastActivity = getLastActivity(sheet, userPhone);
 
-        @media (max-width: 400px) {
-            .prize-text {
-                width: 60px;
-                font-size: 11px;
-                transform: rotate(calc(var(--i) * 60deg - 30deg)) translate(70px, 0) rotate(90deg);
-            }
+        const isOfficialWin = data.prize && data.prize !== "Try Again";
+
+        let entryType = "ATTEMPT";
+        let denialReason = "";
+        
+        if (isSpinLimited(lastActivity)) {
+            denialReason = "RATE LIMITED - SPIN DENIED";
+            entryType = "DENIED_SPIN";
+        } else if (isOfficialWin && isWinLimited(lastActivity)) {
+            denialReason = "RATE LIMITED - WIN DENIED";
+            entryType = "DENIED_WIN";
+        } else if (isOfficialWin) {
+            entryType = "WIN"; // Confirmed, legitimate win
         }
-
-        .spin-button {
-            padding: 15px 30px;
-            font-size: 18px;
-            font-weight: bold;
-            color: #e1c254;
-            background-color: #15402b;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background-color 0.3s;
-            z-index: 50;
+        
+        // --- 2. DATA LOGGING ---
+        let prizeStatus = denialReason || data.prize;
+        let finalCode = denialReason ? "N/A" : data.code;
+        
+        // Prepare row data based on Sheet Structure (A-F, Index 0-5)
+        let rowData = [
+            new Date(),      // Index 0: Timestamp
+            data.name,       // Index 1: Name
+            data.phone,      // Index 2: Phone
+            prizeStatus,     // Index 3: Prize (or Denial Reason)
+            finalCode,       // Index 4: Prize Code
+            entryType        // Index 5: Entry Type (WIN, ATTEMPT, DENIED_WIN, DENIED_SPIN)
+        ];
+        
+        sheet.appendRow(rowData);
+        
+        if (denialReason) {
+             result.status = 'limited';
+             result.message = 'Rate limit applied: ' + denialReason;
+        } else {
+             result.status = 'success';
+             result.message = 'Data recorded successfully';
         }
+        
+    } catch (error) {
+        Logger.log("POST CRASH ERROR: " + error.toString()); 
+        result.status = 'error';
+        result.message = 'Internal server error. Please check script logs.';
+        
+    } finally {
+        return createJsonResponse(result);
+    }
+}
 
-        .spin-button:disabled {
-            background-color: #a0a0a0;
-            cursor: not-allowed;
-        }
+/**
+ * Retrieves the last spin and last win time for the user, and hourly spin count.
+ */
+function getLastActivity(sheet, phone) {
+    const data = sheet.getDataRange().getValues();
+    data.shift(); // Remove headers
 
-        /* --- Modal Styling --- */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.4);
-        }
+    const PHONE_COL = 2; // Column C
+    const TIMESTAMP_COL = 0; // Column A
+    const PRIZE_COL = 3; // Column D (Used to count all spins/attempts)
+    const TYPE_COL = 5; // Column F (Used to confirm official 'WIN' entries)
 
-        .modal-content {
-            background-color: #fff;
-            margin: 15% auto;
-            padding: 20px;
-            border-radius: 8px;
-            width: 80%;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
+    let lastSpinTime = 0;
+    let lastWinTime = 0;
+    let spinCountHour = 0;
+    const oneHourMs = 60 * 60 * 1000;
+    const now = new Date().getTime();
 
-        .prize-display {
-            font-size: 24px;
-            font-weight: bold;
-            color: #15402b;
-            margin-bottom: 15px;
-        }
+    for (let i = data.length - 1; i >= 0; i--) {
+        const row = data[i];
 
-        .modal input[type="text"] {
-            width: 90%;
-            padding: 10px;
-            margin: 8px 0;
-            display: inline-block;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-
-        .modal button {
-            background-color: #154028;
-            color: white;
-            padding: 10px 20px;
-            margin-top: 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body>
-
-    <h1> Meetup Coffee Shop </h1>
-
-    <div class="wheel-container">
-        <div class="pointer"></div>
-        <div class="wheel" id="wheel">
-            <div class="prize-text" style="--i:1;">TRY AGAIN</div>
-            <div class="prize-text" style="--i:2;">25% OFF</div>
-            <div class="prize-text" style="--i:3;">50% OFF COFFEE</div>
-            <div class="prize-text" style="--i:4;">FREE COOKIE</div>
-            <div class="prize-text" style="--i:5;">BOGO FREE</div>
-            <div class="prize-text" style="--i:6;">35% OFF BILL</div>
-        </div>
-
-        <div class="center-logo">
-            <img src="meetup logo 1 new.jpeg" alt="Meetup Coffee Shop Logo">
-        </div>
-    </div>
-
-    <button class="spin-button" id="spinBtn">SPIN TO WIN!</button>
-
-    <div id="prizeModal" class="modal">
-        <div class="modal-content">
-            <h2>🎉 CONGRATULATIONS! 🎉</h2>
-            <div class="prize-display" id="prizeText"></div>
-            <p>Please enter your details to receive your prize code:</p>
-
-            <form id="dataForm">
-                <input type="text" id="userName" placeholder="Your Full Name" required>
-                <input type="tel" id="userPhone" placeholder="8-Digit Phone Number (e.g., 70123456)" minlength="8" maxlength="8" pattern="[0-9]{8}" required>
-                <input type="hidden" id="winningPrize">
-                <input type="hidden" id="prizeCode">
-                <input type="hidden" id="spinTime" name="spinTime">
-                <button type="submit" id="submitBtn">Get My Prize!</button>
-                <div id="statusMessage" style="margin-top: 10px; color: #38761d;"></div>
-            </form>
-        </div>
-    </div>
-
-   <script>
-        document.addEventListener('DOMContentLoaded', (event) => {
+        if (row[PHONE_COL] === phone) {
+            const entryTime = new Date(row[TIMESTAMP_COL]).getTime();
             
-            const wheel = document.getElementById('wheel');
-            const spinBtn = document.getElementById('spinBtn');
-            const modal = document.getElementById('prizeModal');
-            const prizeText = document.getElementById('prizeText');
-            const dataForm = document.getElementById('dataForm');
-            const winningPrizeInput = document.getElementById('winningPrize');
-            const prizeCodeInput = document.getElementById('prizeCode');
-            const statusMessage = document.getElementById('statusMessage');
-            // NEW: Reference to the spin time field
-            const spinTimeInput = document.getElementById('spinTime'); 
-
-            // Prize data with weights (FINAL SYNCHRONIZED ORDER)
-            const prizes = [
-                { id: 0, name: "BOGO FREE", weight: 5, angleOffset: 30 }, 
-                { id: 1, name: "35% OFF BILL", weight: 15, angleOffset: 90 }, 
-                { id: 2, name: "Try Again", weight: 65, angleOffset: 150 }, 
-                { id: 3, name: "25% OFF", weight: 7, angleOffset: 210 }, 
-                { id: 4, name: "50% OFF COFFEE", weight: 5, angleOffset: 270 }, 
-                { id: 5, name: "FREE COOKIE", weight: 3, angleOffset: 330 } 
-            ];
-
-            // Use your active Google Apps Script URL
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFt3seMxw9EYqHx0J6s-jJOm96u-e5h6QLCITdFYL7sWaUzOd5MsD57K3aJth5Gd7G/exec';
-
-            function getWinningPrize() {
-                let totalWeight = prizes.reduce((sum, prize) => sum + prize.weight, 0);
-                let randomNum = Math.random() * totalWeight;
-                let cumulativeWeight = 0;
-                for (const prize of prizes) {
-                    cumulativeWeight += prize.weight;
-                    if (randomNum < cumulativeWeight) {
-                        return prize;
-                    }
-                }
-                return prizes[0]; 
+            // 1. Check for confirmed WIN (must have 'WIN' in Column F)
+            if (row[TYPE_COL] === "WIN" && lastWinTime === 0) {
+                lastWinTime = entryTime;
             }
 
-            function generatePrizeCode() {
-                return 'MC-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+            // 2. Check for spin count within the last hour (based on ALL entries)
+            if (row[PRIZE_COL] && (now - entryTime < oneHourMs)) {
+                spinCountHour++;
             }
 
-            if (spinBtn) { 
-                spinBtn.addEventListener('click', () => {
-                    // NEW: Populate spin time on every button click
-                    spinTimeInput.value = new Date().getTime(); 
-
-                    spinBtn.disabled = true;
-                    statusMessage.textContent = '';
-                    
-                    wheel.style.transition = 'none';
-                    wheel.style.transform = 'rotate(0deg)';
-                    void wheel.offsetWidth; 
-
-                    const winningPrize = getWinningPrize();
-                    const prizeCode = generatePrizeCode();
-                    
-                    const minAngle = winningPrize.angleOffset - 25;
-                    const maxAngle = winningPrize.angleOffset + 25;
-                    const finalAngle = Math.floor(Math.random() * (maxAngle - minAngle)) + minAngle;
-
-                    const fullRotations = 5 * 360; 
-                    const rotationValue = fullRotations - finalAngle; 
-                    
-                    wheel.style.transition = 'transform 6s cubic-bezier(0.25, 0.1, 0, 1)';
-                    wheel.style.transform = `rotate(${rotationValue}deg)`;
-                    
-                    // Show the Pop-up after the spin finishes (6.1 seconds)
-                    setTimeout(() => {
-                        // Reset modal to winner defaults
-                        document.getElementById('statusMessage').textContent = '';
-                        document.getElementById('submitBtn').style.display = 'block'; 
-                        document.getElementById('userName').style.display = 'block';
-                        document.getElementById('userPhone').style.display = 'block';
-                        document.querySelector('#prizeModal p').textContent = 'Please enter your details to receive your prize code:';
-                        document.querySelector('#prizeModal h2').textContent = '🎉 CONGRATULATIONS! 🎉';
-
-                        prizeText.textContent = winningPrize.name;
-                        winningPrizeInput.value = winningPrize.name;
-                        prizeCodeInput.value = prizeCode;
-
-                        // Check for 'Try Again'
-                        if (winningPrize.name === "Try Again") {
-                            document.getElementById('submitBtn').style.display = 'none';
-                            document.getElementById('userName').style.display = 'none';
-                            document.getElementById('userPhone').style.display = 'none';
-                            document.getElementById('statusMessage').textContent = 'Try again soon!';
-                            document.querySelector('#prizeModal p').textContent = 'Thanks for playing! Better luck next time.';
-                            document.querySelector('#prizeModal h2').textContent = '😞 SORRY! 😞';
-                        }
-                        
-                        modal.style.display = "block";
-                        
-                    }, 6100);
-                });
+            // 3. Check for last Spin time
+            if (lastSpinTime === 0) {
+                lastSpinTime = entryTime;
             }
+        }
+    }
 
+    if (lastSpinTime === 0) {
+        lastSpinTime = now - oneHourMs; 
+    }
+    
+    return { lastSpinTime, lastWinTime, spinCountHour };
+}
 
-            // Handle the Form Submission (Data Collection)
-            dataForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const userName = document.getElementById('userName').value;
-                const userPhone = document.getElementById('userPhone').value.trim();
-                
-                // CRITICAL VALIDATION: 8-digit phone number check
-                if (!/^\d{8}$/.test(userPhone)) {
-                    statusMessage.textContent = '❌ Error: Phone number must be exactly 8 digits.';
-                    statusMessage.style.color = 'red';
-                    document.getElementById('submitBtn').disabled = false;
-                    return; // Stop submission
-                }
-                statusMessage.style.color = '#38761d'; // Reset color
+/**
+ * Enforces the 2 spins per hour limit.
+ */
+function isSpinLimited(activity) {
+    return activity.spinCountHour >= MAX_SPINS_PER_HOUR;
+}
 
-                // Collect the data including spinTime
-                const formData = {
-                    name: userName,
-                    phone: userPhone,
-                    prize: winningPrizeInput.value,
-                    code: prizeCodeInput.value,
-                    date: new Date().toISOString(),
-                    spinTime: spinTimeInput.value // Send spin time for server-side rate limit check
-                };
-                
-                statusMessage.textContent = 'Submitting...';
-                document.getElementById('submitBtn').disabled = true;
-
-                try {
-                    const response = await fetch(SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'no-cors', 
-                        cache: 'no-cache',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formData)
-                    });
-                    
-                    // Handle success/denial message based on logic in Code.gs
-                    if (formData.prize !== "Try Again") {
-                         statusMessage.innerHTML = `✅ Success! Your prize code is: <strong>${formData.code}</strong><br>Show this code to the barista!`;
-                    } else {
-                         statusMessage.innerHTML = `✅ Success! Data submitted.`;
-                    }
-                    
-                    document.getElementById('userName').disabled = true;
-                    document.getElementById('userPhone').disabled = true;
-
-                } catch (error) {
-                    console.error('Error submitting data:', error);
-                    statusMessage.textContent = '❌ Submission failed. Please try again.';
-                    document.getElementById('submitBtn').disabled = false;
-                }
-            });
-            
-            // Allows user to close the modal by clicking outside
-            window.onclick = function(event) {
-                if (event.target == modal) {
-                    modal.style.display = "none";
-                    document.getElementById('userName').disabled = false;
-                    document.getElementById('userPhone').disabled = false;
-                    document.getElementById('submitBtn').disabled = false;
-                    dataForm.reset();
-                    spinBtn.disabled = false; 
-                    
-                    // Re-show form elements in case a 'Try Again' was dismissed
-                    document.getElementById('submitBtn').style.display = 'block'; 
-                    document.getElementById('userName').style.display = 'block';
-                    document.getElementById('userPhone').style.display = 'block';
-                }
-            }
-        }); 
-    </script>
-</body>
-</html>
+/**
+ * Enforces the 1 win per week limit.
+ */
+function isWinLimited(activity) {
+    if (activity.lastWinTime === 0) {
+        return false;
+    }
+    const winLimitMs = WIN_LIMIT_DAYS * 24 * 60 * 60 * 1000;
+    const now = new Date().getTime();
+    
+    return (now - activity.lastWinTime) < winLimitMs;
+}
 
 
 

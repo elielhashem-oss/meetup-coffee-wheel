@@ -258,7 +258,7 @@
             const spinTimeInput = document.getElementById('spinTime'); 
 
             // Prize data with weights (FINAL SYNCHRONIZED ORDER)
-             const prizes = [
+            const prizes = [
                 { id: 0, name: "BOGO FREE", weight: 5, angleOffset: 30 }, 
                 { id: 1, name: "35% OFF BILL", weight: 15, angleOffset: 90 }, 
                 { id: 2, name: "Try Again", weight: 65, angleOffset: 150 }, 
@@ -266,7 +266,7 @@
                 { id: 4, name: "50% OFF COFFEE", weight: 5, angleOffset: 270 }, 
                 { id: 5, name: "FREE COOKIE", weight: 3, angleOffset: 330 } 
             ];
-            // YOUR ACTIVE GOOGLE APPS SCRIPT URL MUST BE HERE
+
             const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFt3seMxw9EYqHx0J6s-jJOm96u-e5h6QLCITdFYL7sWaUzOd5MsD57K3aJth5Gd7G/exec'; 
 
             function getWinningPrize() {
@@ -288,7 +288,6 @@
 
             if (spinBtn) { 
                 spinBtn.addEventListener('click', () => {
-                    // NEW: Populate spin time on every button click
                     spinTimeInput.value = new Date().getTime(); 
 
                     spinBtn.disabled = true;
@@ -365,34 +364,38 @@
                     prize: winningPrizeInput.value,
                     code: prizeCodeInput.value,
                     date: new Date().toISOString(),
-                    spinTime: spinTimeInput.value // Send spin time for server-side rate limit check
+                    spinTime: spinTimeInput.value 
                 };
                 
                 statusMessage.textContent = 'Submitting...';
                 document.getElementById('submitBtn').disabled = true;
-try {
-    const response = await fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors', 
-        // ... (rest of the fetch call) ...
-    });
-    
-    // FINAL FIX: Trust the submission completed successfully based on 'no-cors' completion
-    if (formData.prize !== "Try Again") {
-         statusMessage.innerHTML = `✅ Submission Sent! Your code: <strong>${formData.code}</strong>. Check if prize was accepted.`;
-    } else {
-         statusMessage.innerHTML = `✅ Submission logged. Try again soon!`;
-    }
-    
-    document.getElementById('userName').disabled = true;
-    document.getElementById('userPhone').disabled = true;
 
-} catch (error) {
-    // Keep this for actual network failure
-    console.error('Error submitting data:', error);
-    statusMessage.textContent = '❌ Submission failed. Please try again.';
-    document.getElementById('submitBtn').disabled = false;
-}
+                try {
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', 
+                        cache: 'no-cache',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                    
+                    // FINAL FIX: Front-end now shows the correct status based on the server's intent
+                    
+                    // We must assume the server's logic worked because we cannot read the no-cors response.
+                    if (formData.prize !== "Try Again") {
+                         statusMessage.innerHTML = `✅ Submission Sent! Your code: <strong>${formData.code}</strong>. Check if prize was accepted.`;
+                    } else {
+                         statusMessage.innerHTML = `✅ Submission logged. Try again soon!`;
+                    }
+                    
+                    document.getElementById('userName').disabled = true;
+                    document.getElementById('userPhone').disabled = true;
+
+                } catch (error) {
+                    console.error('Error submitting data:', error);
+                    statusMessage.textContent = '❌ Submission failed. Please try again.';
+                    document.getElementById('submitBtn').disabled = false;
+                }
             });
             
             // Allows user to close the modal by clicking outside
@@ -415,6 +418,8 @@ try {
     </script>
 </body>
 </html>
+
+
 
 
 

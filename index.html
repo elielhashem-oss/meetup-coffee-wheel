@@ -370,39 +370,25 @@
                 
                 statusMessage.textContent = 'Submitting...';
                 document.getElementById('submitBtn').disabled = true;
-
-                try {
-                     const response = await fetch(SCRIPT_URL, {
+try {
+    const response = await fetch(SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors', 
-        cache: 'no-cache',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        // ... (rest of the fetch call) ...
     });
     
-    // NOTE: Because of 'no-cors', we cannot read the response.status directly. 
-    // We MUST trust the server-side log, but we will assume failure if the submission was denied.
-    
-    // --- FINAL CHECK: Log the denial result and override the front-end message ---
-    
-    if (denialReason) {
-        // Assume this path for now if previous submission failed
-        statusMessage.style.color = 'red';
-        statusMessage.innerHTML = `❌ DENIED. You have reached the ${denialReason === 'RATE LIMITED - SPIN DENIED' ? 'hourly spin limit' : 'weekly win limit'}.`;
-    } 
-    else if (formData.prize !== "Try Again") {
-        // If no denial, show the success message
-        statusMessage.style.color = '#38761d';
-        statusMessage.innerHTML = `✅ Success! Your prize code is: <strong>${formData.code}</strong><br>Show this code to the barista!`;
+    // FINAL FIX: Trust the submission completed successfully based on 'no-cors' completion
+    if (formData.prize !== "Try Again") {
+         statusMessage.innerHTML = `✅ Submission Sent! Your code: <strong>${formData.code}</strong>. Check if prize was accepted.`;
     } else {
-        statusMessage.style.color = '#38761d';
-        statusMessage.innerHTML = `✅ Submission logged. Try again soon!`;
+         statusMessage.innerHTML = `✅ Submission logged. Try again soon!`;
     }
     
     document.getElementById('userName').disabled = true;
     document.getElementById('userPhone').disabled = true;
 
 } catch (error) {
+    // Keep this for actual network failure
     console.error('Error submitting data:', error);
     statusMessage.textContent = '❌ Submission failed. Please try again.';
     document.getElementById('submitBtn').disabled = false;
@@ -429,6 +415,7 @@
     </script>
 </body>
 </html>
+
 
 
 

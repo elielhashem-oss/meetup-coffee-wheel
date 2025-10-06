@@ -6,7 +6,7 @@
     <title> Meetup Coffee Shop - Spin & Win!</title>
     <style>
         /* --- CSS Styling (FINAL CONSOLIDATED VERSION) --- */
-        body {
+          body {
             font-family: sans-serif;
             display: flex;
             flex-direction: column;
@@ -14,8 +14,14 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            background-color: #f7f7f7;
-            color: #1a1a1a;
+    
+        /* --- CRITICAL BACKGROUND IMAGE FIX --- */
+            background-image: url('background.jpeg'); 
+            background-size: cover; /* Ensures the image covers the entire screen */
+            background-position: center; /* Centers the image */
+            background-attachment: fixed; /* Keeps the background static if the page scrolls */
+    
+         color: #1a1a1a; /* Keep foreground text dark */
         }
 
         h1 {
@@ -429,6 +435,7 @@
     </script>
 </body>
 </html>
+
 
 
 

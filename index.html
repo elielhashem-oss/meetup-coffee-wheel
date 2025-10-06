@@ -373,29 +373,41 @@
                 document.getElementById('submitBtn').disabled = true;
 
                 try {
-                    const response = await fetch(SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'no-cors', 
-                        cache: 'no-cache',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formData)
-                    });
-                    
-                    // The front-end trusts the submission completed successfully because of 'no-cors'
-                    if (formData.prize !== "Try Again") {
-                         statusMessage.innerHTML = `✅ Submission Sent! Your code: <strong>${formData.code}</strong>. Check if prize was accepted.`;
-                    } else {
-                         statusMessage.innerHTML = `✅ Submission logged. Try again soon!`;
-                    }
-                    
-                    document.getElementById('userName').disabled = true;
-                    document.getElementById('userPhone').disabled = true;
+               const response = await fetch(SCRIPT_URL, {
+                  method: 'POST',
+                  mode: 'no-cors', 
+                  cache: 'no-cache',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(formData)
+    });
+    
+    // The server has received the data (even if it marked it DENIED).
+    // Lock the interface to prevent any immediate re-submission.
+    
+    if (formData.prize !== "Try Again") {
+        statusMessage.innerHTML = `✅ **PRIZE LOGGED!** Your code: <strong>${formData.code}</strong>. Show this to the barista!`;
+        
+        // --- FINAL LOCKDOWN ---
+        document.getElementById('submitBtn').style.display = 'none'; // Hide submit button
+        document.getElementById('userName').disabled = true; // Lock fields
+        document.getElementById('userPhone').disabled = true;
+        spinBtn.style.display = 'none'; // Hide the Spin button permanently
+        // -----------------------
 
-                } catch (error) {
-                    console.error('Error submitting data:', error);
-                    statusMessage.textContent = '❌ Submission failed. Please try again.';
-                    document.getElementById('submitBtn').disabled = false;
-                }
+    } else {
+         statusMessage.innerHTML = `✅ Submission logged. Try again soon!`;
+         document.getElementById('submitBtn').style.display = 'none';
+         document.getElementById('userName').disabled = true;
+         document.getElementById('userPhone').disabled = true;
+    }
+    
+    
+} catch (error) {
+    // Keep this for actual network failure
+    console.error('Error submitting data:', error);
+    statusMessage.textContent = '❌ Submission failed. Please try again.';
+    document.getElementById('submitBtn').disabled = false;
+}
             });
             
             // Allows user to close the modal by clicking outside
@@ -418,6 +430,7 @@
     </script>
 </body>
 </html>
+
 
 
 

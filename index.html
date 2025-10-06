@@ -22,8 +22,8 @@
             padding: 15px 30px;
             font-size: 18px;
             font-weight: bold;
-            color: #e1c254; /* Yellow text */
-            background-color: #15402b; /* Dark Green Header */
+            color: #e1c254;
+            background-color: #15402b;
             border: none;
             border-radius: 5px;
         }
@@ -207,12 +207,12 @@
     <div class="wheel-container">
         <div class="pointer"></div>
         <div class="wheel" id="wheel">
-            <div class="prize-text" style="--i:1;">TRY AGAIN</div>
-            <div class="prize-text" style="--i:2;">25% OFF</div>
-            <div class="prize-text" style="--i:3;">50% OFF COFFEE</div>
-            <div class="prize-text" style="--i:4;">FREE COOKIE</div>
-            <div class="prize-text" style="--i:5;">BOGO FREE</div>
-            <div class="prize-text" style="--i:6;">35% OFF BILL</div>
+            <div class="prize-text" style="--i:1;">BOGO FREE</div>
+            <div class="prize-text" style="--i:2;">35% OFF BILL</div>
+            <div class="prize-text" style="--i:3;">TRY AGAIN</div>
+            <div class="prize-text" style="--i:4;">25% OFF</div>
+            <div class="prize-text" style="--i:5;">50% OFF COFFEE</div>
+            <div class="prize-text" style="--i:6;">FREE COOKIE</div>
         </div>
 
         <div class="center-logo">
@@ -259,16 +259,15 @@
 
             // Prize data with weights (FINAL SYNCHRONIZED ORDER)
             const prizes = [
-                // Weights were aggressively increased to avoid "Try Again" misfires
+                // Weights are high but are irrelevant for the final structural fix
                 { id: 0, name: "BOGO FREE", weight: 5, angleOffset: 30 }, 
                 { id: 1, name: "35% OFF BILL", weight: 15, angleOffset: 90 }, 
-                { id: 2, name: "Try Again", weight: 65, angleOffset: 150 }, // Low weight for stability
+                { id: 2, name: "Try Again", weight: 65, angleOffset: 150 }, 
                 { id: 3, name: "25% OFF", weight: 7, angleOffset: 210 }, 
                 { id: 4, name: "50% OFF COFFEE", weight: 5, angleOffset: 270 }, 
                 { id: 5, name: "FREE COOKIE", weight: 3, angleOffset: 330 } 
             ];
 
-            // YOUR ACTIVE GOOGLE APPS SCRIPT URL MUST BE HERE
             const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFt3seMxw9EYqHx0J6s-jJOm96u-e5h6QLCITdFYL7sWaUzOd5MsD57K3aJth5Gd7G/exec'; 
 
             function getWinningPrize() {
@@ -366,64 +365,64 @@
                     prize: winningPrizeInput.value,
                     code: prizeCodeInput.value,
                     date: new Date().toISOString(),
-                    spinTime: spinTimeInput.value
+                    spinTime: spinTimeInput.value 
                 };
                 
                 statusMessage.textContent = 'Submitting...';
                 document.getElementById('submitBtn').disabled = true;
 
                 try {
-               const response = await fetch(SCRIPT_URL, {
-                  method: 'POST',
-                  mode: 'no-cors', 
-                  cache: 'no-cache',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(formData)
-    });
-    
-    // The server has received the data (even if it marked it DENIED).
-    // Lock the interface to prevent any immediate re-submission.
-    
-    if (formData.prize !== "Try Again") {
-        statusMessage.innerHTML = `✅ **PRIZE LOGGED!** Your code: <strong>${formData.code}</strong>. Show this to the barista!`;
-        
-        // --- FINAL LOCKDOWN ---
-        document.getElementById('submitBtn').style.display = 'none'; // Hide submit button
-        document.getElementById('userName').disabled = true; // Lock fields
-        document.getElementById('userPhone').disabled = true;
-        spinBtn.style.display = 'none'; // Hide the Spin button permanently
-        // -----------------------
-
-    } else {
-         statusMessage.innerHTML = `✅ Submission logged. Try again soon!`;
-         document.getElementById('submitBtn').style.display = 'none';
-         document.getElementById('userName').disabled = true;
-         document.getElementById('userPhone').disabled = true;
-    }
-    
-    
-} catch (error) {
-    // Keep this for actual network failure
-    console.error('Error submitting data:', error);
-    statusMessage.textContent = '❌ Submission failed. Please try again.';
-    document.getElementById('submitBtn').disabled = false;
-}
+                    const response = await fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', 
+                        cache: 'no-cache',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData)
+                    });
+                    
+                    // --- FINAL LOCKDOWN LOGIC APPLIED HERE ---
+                    
+                    // The front-end assumes success because the fetch completed (no-cors mode)
+                    if (formData.prize !== "Try Again") {
+                        // Successful submission (or denial logged on server)
+                        statusMessage.innerHTML = `✅ **PRIZE LOGGED!** Your code: <strong>${formData.code}</strong>. Show this to the barista!`;
+                        
+                        // --- PERMANENT LOCKDOWN OF INTERFACE ---
+                        document.getElementById('submitBtn').style.display = 'none'; // Hide submit button
+                        document.getElementById('userName').disabled = true; // Lock fields
+                        document.getElementById('userPhone').disabled = true;
+                        spinBtn.style.display = 'none'; // Hide the Spin button permanently
+                        // ----------------------------------------
+                    } else {
+                         // Only logging attempt, no prize code needed
+                         statusMessage.innerHTML = `✅ Submission logged. Try again soon!`;
+                         document.getElementById('submitBtn').style.display = 'none';
+                         document.getElementById('userName').disabled = true;
+                         document.getElementById('userPhone').disabled = true;
+                    }
+                    
+                } catch (error) {
+                    console.error('Error submitting data:', error);
+                    statusMessage.textContent = '❌ Submission failed. Please try again.';
+                    document.getElementById('submitBtn').disabled = false;
+                }
             });
             
             // Allows user to close the modal by clicking outside
             window.onclick = function(event) {
                 if (event.target == modal) {
                     modal.style.display = "none";
+                    
+                    // Unlock spin button only if the result was "Try Again"
+                    if (winningPrizeInput.value === "Try Again") {
+                         spinBtn.disabled = false;
+                    }
+                    
+                    // Always reset form fields after closing
                     document.getElementById('userName').disabled = false;
                     document.getElementById('userPhone').disabled = false;
                     document.getElementById('submitBtn').disabled = false;
                     dataForm.reset();
-                    spinBtn.disabled = false; 
-                    
-                    // Re-show form elements
-                    document.getElementById('submitBtn').style.display = 'block'; 
-                    document.getElementById('userName').style.display = 'block';
-                    document.getElementById('userPhone').style.display = 'block';
                 }
             }
         }); 

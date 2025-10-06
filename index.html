@@ -43,7 +43,7 @@
             transition: transform 6s cubic-bezier(0.25, 0.1, 0, 1);
             overflow: hidden;
             
-            /* CONIC GRADIENT: Colors match the final visual layout */
+            /* CONIC GRADIENT: Final colors */
             background: conic-gradient(
                 #38761d 0deg 60deg,
                 #6aa84f 60deg 120deg,
@@ -102,13 +102,13 @@
             text-align: center;
             line-height: 1.2;
             z-index: 20; 
-            color: #15402b; /* Dark text on yellow tag */
-            background: rgba(225,194,84,0.85); /* Dark Yellow Tag background */
+            color: #15402b;
+            background: rgba(225,194,84,0.85);
             border-radius: 8px;
             padding: 4px 0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             
-            /* FINAL TRANSFORMATION: Centered, Rotated Upright, and Pushed Out */
+            /* FINAL TRANSFORMATION */
             transform: 
                 translate(-50%, -50%) 
                 rotate(calc(var(--i) * 60deg)) 
@@ -206,13 +206,13 @@
 
     <div class="wheel-container">
         <div class="pointer"></div>
-         <div class="wheel" id="wheel">
-            <div class="prize-text" style="--i:1;">TRY AGAIN</div>
-            <div class="prize-text" style="--i:2;">25% OFF</div>
-            <div class="prize-text" style="--i:3;">50% OFF COFFEE</div>
-            <div class="prize-text" style="--i:4;">FREE COOKIE</div>
-            <div class="prize-text" style="--i:5;">BOGO FREE</div>
-            <div class="prize-text" style="--i:6;">35% OFF BILL</div>
+        <div class="wheel" id="wheel">
+            <div class="prize-text" style="--i:1;">BOGO FREE</div>
+            <div class="prize-text" style="--i:2;">35% OFF BILL</div>
+            <div class="prize-text" style="--i:3;">TRY AGAIN</div>
+            <div class="prize-text" style="--i:4;">25% OFF</div>
+            <div class="prize-text" style="--i:5;">50% OFF COFFEE</div>
+            <div class="prize-text" style="--i:6;">FREE COOKIE</div>
         </div>
 
         <div class="center-logo">
@@ -259,14 +259,16 @@
 
             // Prize data with weights (FINAL SYNCHRONIZED ORDER)
             const prizes = [
-                { id: 0, name: "BOGO FREE", weight: 5, angleOffset: 30 }, 
-                { id: 1, name: "35% OFF BILL", weight: 15, angleOffset: 90 }, 
-                { id: 2, name: "Try Again", weight: 65, angleOffset: 150 }, 
-                { id: 3, name: "25% OFF", weight: 7, angleOffset: 210 }, 
-                { id: 4, name: "50% OFF COFFEE", weight: 5, angleOffset: 270 }, 
-                { id: 5, name: "FREE COOKIE", weight: 3, angleOffset: 330 } 
+                // Weights were aggressively increased to avoid "Try Again" misfires
+                { id: 0, name: "BOGO FREE", weight: 15, angleOffset: 30 }, 
+                { id: 1, name: "35% OFF BILL", weight: 25, angleOffset: 90 }, 
+                { id: 2, name: "Try Again", weight: 1, angleOffset: 150 }, // Low weight for stability
+                { id: 3, name: "25% OFF", weight: 17, angleOffset: 210 }, 
+                { id: 4, name: "50% OFF COFFEE", weight: 15, angleOffset: 270 }, 
+                { id: 5, name: "FREE COOKIE", weight: 27, angleOffset: 330 } 
             ];
 
+            // YOUR ACTIVE GOOGLE APPS SCRIPT URL MUST BE HERE
             const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyFt3seMxw9EYqHx0J6s-jJOm96u-e5h6QLCITdFYL7sWaUzOd5MsD57K3aJth5Gd7G/exec'; 
 
             function getWinningPrize() {
@@ -353,7 +355,7 @@
                     statusMessage.textContent = '❌ Error: Phone number must be exactly 8 digits.';
                     statusMessage.style.color = 'red';
                     document.getElementById('submitBtn').disabled = false;
-                    return; // Stop submission
+                    return; 
                 }
                 statusMessage.style.color = '#38761d'; // Reset color
 
@@ -364,7 +366,7 @@
                     prize: winningPrizeInput.value,
                     code: prizeCodeInput.value,
                     date: new Date().toISOString(),
-                    spinTime: spinTimeInput.value 
+                    spinTime: spinTimeInput.value
                 };
                 
                 statusMessage.textContent = 'Submitting...';
@@ -379,9 +381,7 @@
                         body: JSON.stringify(formData)
                     });
                     
-                    // FINAL FIX: Front-end now shows the correct status based on the server's intent
-                    
-                    // We must assume the server's logic worked because we cannot read the no-cors response.
+                    // The front-end trusts the submission completed successfully because of 'no-cors'
                     if (formData.prize !== "Try Again") {
                          statusMessage.innerHTML = `✅ Submission Sent! Your code: <strong>${formData.code}</strong>. Check if prize was accepted.`;
                     } else {
@@ -408,7 +408,7 @@
                     dataForm.reset();
                     spinBtn.disabled = false; 
                     
-                    // Re-show form elements in case a 'Try Again' was dismissed
+                    // Re-show form elements
                     document.getElementById('submitBtn').style.display = 'block'; 
                     document.getElementById('userName').style.display = 'block';
                     document.getElementById('userPhone').style.display = 'block';
@@ -418,14 +418,6 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
 
 
 

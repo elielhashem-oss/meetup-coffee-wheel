@@ -204,6 +204,22 @@
             border-radius: 4px;
             cursor: pointer;
         }
+        /* Styling for the Menu Link */
+        .menu-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #f1c232; /* Use a brand color (yellow/gold) */
+            color: #15402b; /* Dark text */
+            text-decoration: none; /* Remove underline */
+            font-weight: bold;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+
+        .menu-link:hover {
+            background-color: #e6b820; /* Slightly darker on hover */
+    }
     </style>
 </head>
 <body>
@@ -391,8 +407,12 @@
                     // The front-end assumes success because the fetch completed (no-cors mode)
                     if (formData.prize !== "Try Again") {
                         // Successful submission (or denial logged on server)
-                        statusMessage.innerHTML = `✅ **PRIZE LOGGED!** Your code: <strong>${formData.code}</strong>. Show this to the barista!`;
-                        
+                        statusMessage.innerHTML = `
+                            ✅ <strong>PRIZE LOGGED!</strong> Your code: <strong>${formData.code}</strong>. Show this to the barista!
+                            <br><br>
+                            <a href="meetup_coffee_menu.jpeg" target="_blank" class="menu-link">    VIEW OUR FULL MENU! ☕
+                            </a>
+                        `;
                         // --- PERMANENT LOCKDOWN OF INTERFACE ---
                         document.getElementById('submitBtn').style.display = 'none'; // Hide submit button
                         document.getElementById('userName').disabled = true; // Lock fields
@@ -400,13 +420,18 @@
                         spinBtn.style.display = 'none'; // Hide the Spin button permanently
                         // ----------------------------------------
                     } else {
-                         // Only logging attempt, no prize code needed
-                         statusMessage.innerHTML = `✅ Submission logged. Try again soon!`;
-                         document.getElementById('submitBtn').style.display = 'none';
-                         document.getElementById('userName').disabled = true;
-                         document.getElementById('userPhone').disabled = true;
+                        // If they got "Try Again," they still get the menu link
+                        statusMessage.innerHTML = `
+                            ✅ Submission logged. Try again soon!
+                            <br><br>
+                            <a href="meetup_coffee_menu.pdf" target="_blank" class="menu-link">
+                                VIEW OUR MENU!
+                            </a>
+                        `;
+                        document.getElementById('submitBtn').style.display = 'none';
+                        document.getElementById('userName').disabled = true;
+                        document.getElementById('userPhone').disabled = true;
                     }
-                    
                 } catch (error) {
                     console.error('Error submitting data:', error);
                     statusMessage.textContent = '❌ Submission failed. Please try again.';
@@ -435,6 +460,10 @@
     </script>
 </body>
 </html>
+
+
+
+
 
 
 
